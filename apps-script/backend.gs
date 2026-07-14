@@ -54,6 +54,9 @@ function doPost(e) {
       case 'atualizar_status':
         result = atualizarStatus(params);
         break;
+      case 'excluir_protocolo':
+        result = excluirProtocolo(params);
+        break;
       default:
         result = { success: false, error: 'Ação desconhecida.' };
     }
@@ -362,6 +365,29 @@ function excluirUsuario(params) {
   }
 
   return { success: false, error: 'Usuário não encontrado.' };
+}
+
+function excluirProtocolo(params) {
+  const token = params._token;
+  const userId = params._user;
+
+  if (!validarSessao(token, userId)) {
+    return { success: false, error: 'Sessão inválida.' };
+  }
+
+  const sheet = getSheet('Protocolos');
+  const dados = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < dados.length; i++) {
+    if (dados[i][0] === params.id) {
+      const numero = dados[i][1];
+      sheet.deleteRow(i + 1);
+      registrarLog('excluir_protocolo', `Protocolo ${numero} excluído por ${userId}`);
+      return { success: true };
+    }
+  }
+
+  return { success: false, error: 'Protocolo não encontrado.' };
 }
 
 function atualizarStatus(params) {

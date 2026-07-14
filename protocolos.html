@@ -102,9 +102,11 @@
     let usuariosMap = {};
     let protocolosCache = [];
     let protocoloAtual = null;
+    let currentUser = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
-      requireAuth();
+      currentUser = requireAuth();
+      if (!currentUser) return;
       await carregarUsuarios();
       await carregarProtocolos();
       setupFilters();
@@ -163,7 +165,20 @@
           <td><span class="badge ${getStatusColor(p.status)}">${p.status || 'Recebido'}</span></td>
           <td>${responsavelNome}</td>
           <td>
-            <button class="btn btn-outline btn-sm" onclick="verProtocolo('${p.id}')">Ver</button>
+            <div class="actions">
+              <button class="btn btn-outline btn-sm" onclick="verProtocolo('${p.id}')">Ver</button>
+              <select class="form-select" style="font-size:12px;padding:4px 6px;width:auto;"
+                      onchange="alterarStatus('${p.id}', this.value)">
+                <option value="">Status</option>
+                <option value="Em andamento">Em andamento</option>
+                <option value="Aguardando">Aguardando</option>
+                <option value="Concluído">Concluir</option>
+                <option value="Cancelado">Cancelar</option>
+              </select>
+              ${currentUser.perfil === 'secretario'
+                ? `<button class="btn btn-red btn-sm" onclick="excluirProtocolo('${p.id}')">Excluir</button>`
+                : ''}
+            </div>
           </td>
         `;
         tbody.appendChild(tr);
@@ -171,6 +186,7 @@
     }
 
     function getTipoLabel(tipo) {
+      if (!tipo) return '—';
       const labels = {
         'prova_2chamada': 'Prova de 2ª chamada',
         'cancelamento_matricula': 'Cancelamento de matrícula',
@@ -185,7 +201,7 @@
         'solicitacao_vaga_ch': 'Solicitação de vaga (Competência e Habilidades)',
         'outros': 'Outros',
       };
-      return labels[tipo] || tipo;
+      return tipo.split(',').map(t => labels[t.trim()] || t.trim()).join(', ');
     }
 
     function verProtocolo(id) {
@@ -392,6 +408,49 @@
         </body></html>
       `);
       win.document.close();
+    }
+
+    async function alterarStatus(id, novoStatus) {
+      if (!novoStatus) return;
+
+      const p = protocolosCache.find(x => x.id === id);
+      if (!p) return;
+
+      let notificar = false;
+
+      if (novoStatus === 'Concluído' && p.email) {
+        notificar = confirm(`Deseja notificar ${p.aluno} por email (${p.email}) sobre a conclusão?`);
+      } else if (novoStatus === 'Concluído' && !p.email) {
+        showToast('Aluno não possui email cadastrado para notificação.', 'warning');
+      }
+
+      const res = await apiRequest('atualizar_status', {
+        id,
+        status: novoStatus,
+        notificar: notificar ? 'true' : 'false',
+      });
+
+      if (!res.success) {
+        showToast(res.error || 'Erro ao alterar status.', 'error');
+        return;
+      }
+
+      showToast(`Status alterado para "${novoStatus}"${notificar ? '. Aluno notificado por email!' : ''}`);
+      await carregarProtocolos();
+    }
+
+    async function excluirProtocolo(id) {
+      if (!confirm('Tem certeza que deseja excluir este protocolo? Esta ação não pode ser desfeita.')) return;
+
+      const res = await apiRequest('excluir_protocolo', { id });
+
+      if (!res.success) {
+        showToast(res.error || 'Erro ao excluir protocolo.', 'error');
+        return;
+      }
+
+      await carregarProtocolos();
+      showToast('Protocolo excluído com sucesso!');
     }
 
     function setupFilters() {

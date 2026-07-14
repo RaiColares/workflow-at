@@ -100,9 +100,9 @@
           </label>
 
           <div class="solicitacao-option">
-            <label class="radio-label">
-              <input type="radio" name="tipoSolicitacao" value="prova_2chamada"
-                     onchange="onTipoSolicitacaoChange()">
+            <label class="checkbox-label">
+              <input type="checkbox" name="tipoSolicitacao" value="prova_2chamada"
+                     onclick="onTipoSolicitacaoChange()">
               Prova de 2ª chamada
             </label>
             <div class="dynamic-fields" id="fields_prova_2chamada">
@@ -120,33 +120,33 @@
           </div>
 
           <div class="solicitacao-option">
-            <label class="radio-label">
-              <input type="radio" name="tipoSolicitacao" value="cancelamento_matricula"
-                     onchange="onTipoSolicitacaoChange()">
+            <label class="checkbox-label">
+              <input type="checkbox" name="tipoSolicitacao" value="cancelamento_matricula"
+                     onclick="onTipoSolicitacaoChange()">
               Cancelamento de matrícula
             </label>
           </div>
 
           <div class="solicitacao-option">
-            <label class="radio-label">
-              <input type="radio" name="tipoSolicitacao" value="trancamento_matricula"
-                     onchange="onTipoSolicitacaoChange()">
+            <label class="checkbox-label">
+              <input type="checkbox" name="tipoSolicitacao" value="trancamento_matricula"
+                     onclick="onTipoSolicitacaoChange()">
               Trancamento de matrícula
             </label>
           </div>
 
           <div class="solicitacao-option">
-            <label class="radio-label">
-              <input type="radio" name="tipoSolicitacao" value="revisao_prova"
-                     onchange="onTipoSolicitacaoChange()">
+            <label class="checkbox-label">
+              <input type="checkbox" name="tipoSolicitacao" value="revisao_prova"
+                     onclick="onTipoSolicitacaoChange()">
               Revisão de prova
             </label>
           </div>
 
           <div class="solicitacao-option">
-            <label class="radio-label">
-              <input type="radio" name="tipoSolicitacao" value="expedicao_historico"
-                     onchange="onTipoSolicitacaoChange()">
+            <label class="checkbox-label">
+              <input type="checkbox" name="tipoSolicitacao" value="expedicao_historico"
+                     onclick="onTipoSolicitacaoChange()">
               Expedição de histórico escolar
             </label>
             <div class="sub-via" id="sub_expedicao_historico">
@@ -160,9 +160,9 @@
           </div>
 
           <div class="solicitacao-option">
-            <label class="radio-label">
-              <input type="radio" name="tipoSolicitacao" value="expedicao_diploma"
-                     onchange="onTipoSolicitacaoChange()">
+            <label class="checkbox-label">
+              <input type="checkbox" name="tipoSolicitacao" value="expedicao_diploma"
+                     onclick="onTipoSolicitacaoChange()">
               Expedição de Diploma
             </label>
             <div class="sub-via" id="sub_expedicao_diploma">
@@ -176,49 +176,49 @@
           </div>
 
           <div class="solicitacao-option">
-            <label class="radio-label">
-              <input type="radio" name="tipoSolicitacao" value="abono_falta"
-                     onchange="onTipoSolicitacaoChange()">
+            <label class="checkbox-label">
+              <input type="checkbox" name="tipoSolicitacao" value="abono_falta"
+                     onclick="onTipoSolicitacaoChange()">
               Abono de falta
             </label>
           </div>
 
           <div class="solicitacao-option">
-            <label class="radio-label">
-              <input type="radio" name="tipoSolicitacao" value="troca_turno"
-                     onchange="onTipoSolicitacaoChange()">
+            <label class="checkbox-label">
+              <input type="checkbox" name="tipoSolicitacao" value="troca_turno"
+                     onclick="onTipoSolicitacaoChange()">
               Troca de turno
             </label>
           </div>
 
           <div class="solicitacao-option">
-            <label class="radio-label">
-              <input type="radio" name="tipoSolicitacao" value="solicitacao_estagio"
-                     onchange="onTipoSolicitacaoChange()">
+            <label class="checkbox-label">
+              <input type="checkbox" name="tipoSolicitacao" value="solicitacao_estagio"
+                     onclick="onTipoSolicitacaoChange()">
               Solicitação de estágio
             </label>
           </div>
 
           <div class="solicitacao-option">
-            <label class="radio-label">
-              <input type="radio" name="tipoSolicitacao" value="solicitacao_vaga"
-                     onchange="onTipoSolicitacaoChange()">
+            <label class="checkbox-label">
+              <input type="checkbox" name="tipoSolicitacao" value="solicitacao_vaga"
+                     onclick="onTipoSolicitacaoChange()">
               Solicitação de vaga
             </label>
           </div>
 
           <div class="solicitacao-option">
-            <label class="radio-label">
-              <input type="radio" name="tipoSolicitacao" value="solicitacao_vaga_ch"
-                     onchange="onTipoSolicitacaoChange()">
+            <label class="checkbox-label">
+              <input type="checkbox" name="tipoSolicitacao" value="solicitacao_vaga_ch"
+                     onclick="onTipoSolicitacaoChange()">
               Solicitação de vaga através de avaliação por Competência e Habilidades
             </label>
           </div>
 
           <div class="solicitacao-option">
-            <label class="radio-label">
-              <input type="radio" name="tipoSolicitacao" value="outros"
-                     onchange="onTipoSolicitacaoChange()">
+            <label class="checkbox-label">
+              <input type="checkbox" name="tipoSolicitacao" value="outros"
+                     onclick="onTipoSolicitacaoChange()">
               Outros
             </label>
             <div class="dynamic-fields" id="fields_outros">
@@ -301,23 +301,23 @@
     });
 
     function onTipoSolicitacaoChange() {
-      const selected = document.querySelector('input[name="tipoSolicitacao"]:checked');
-      if (!selected) return;
+      const selected = document.querySelectorAll('input[name="tipoSolicitacao"]:checked');
 
       document.querySelectorAll('.dynamic-fields').forEach(el => el.classList.remove('visible'));
       document.querySelectorAll('.sub-via').forEach(el => el.classList.remove('visible'));
 
-      const value = selected.value;
-
-      if (value === 'prova_2chamada') {
-        document.getElementById('fields_prova_2chamada').classList.add('visible');
-      } else if (value === 'expedicao_historico') {
-        document.getElementById('sub_expedicao_historico').classList.add('visible');
-      } else if (value === 'expedicao_diploma') {
-        document.getElementById('sub_expedicao_diploma').classList.add('visible');
-      } else if (value === 'outros') {
-        document.getElementById('fields_outros').classList.add('visible');
-      }
+      selected.forEach(cb => {
+        const value = cb.value;
+        if (value === 'prova_2chamada') {
+          document.getElementById('fields_prova_2chamada').classList.add('visible');
+        } else if (value === 'expedicao_historico') {
+          document.getElementById('sub_expedicao_historico').classList.add('visible');
+        } else if (value === 'expedicao_diploma') {
+          document.getElementById('sub_expedicao_diploma').classList.add('visible');
+        } else if (value === 'outros') {
+          document.getElementById('fields_outros').classList.add('visible');
+        }
+      });
     }
 
     function addDisciplina() {
@@ -398,9 +398,9 @@
     document.getElementById('protocoloForm').addEventListener('submit', async function(e) {
       e.preventDefault();
 
-      const selected = document.querySelector('input[name="tipoSolicitacao"]:checked');
-      if (!selected) {
-        showToast('Selecione um tipo de solicitação.', 'error');
+      const selected = document.querySelectorAll('input[name="tipoSolicitacao"]:checked');
+      if (selected.length === 0) {
+        showToast('Selecione pelo menos um tipo de solicitação.', 'error');
         return;
       }
 
@@ -425,9 +425,12 @@
       if (subSelected) subtipo = subSelected.value;
 
       let outrosDescricao = '';
-      if (selected.value === 'outros') {
+      const outrosChecked = document.querySelector('input[name="tipoSolicitacao"][value="outros"]:checked');
+      if (outrosChecked) {
         outrosDescricao = document.getElementById('outrosDescricao').value.trim();
       }
+
+      const tiposSelecionados = Array.from(selected).map(cb => cb.value).join(',');
 
       const data = {
         aluno,
@@ -438,7 +441,7 @@
         email: document.getElementById('email').value.trim(),
         notificar: document.getElementById('notificarEmail').checked,
         mensagemOpcional: document.getElementById('mensagemOpcional').value.trim(),
-        tipoSolicitacao: selected.value,
+        tipoSolicitacao: tiposSelecionados,
         disciplinas,
         subtipo,
         outrosDescricao,
@@ -469,7 +472,10 @@
       const protocoloNum = res.protocolo;
       document.getElementById('protocoloNumero').value = protocoloNum;
 
-      const tipoLabel = selected.parentElement.textContent.trim();
+      const tipoLabels = Array.from(selected).map(cb => {
+        const label = cb.parentElement.textContent.trim();
+        return label;
+      }).join(', ');
       const responsavelNome = document.getElementById('responsavel').options[
         document.getElementById('responsavel').selectedIndex
       ]?.text || '—';
@@ -488,7 +494,7 @@
           <p><strong>Aluno:</strong> ${data.aluno}</p>
           <p><strong>Curso:</strong> ${data.curso || '—'}</p>
           <p><strong>Turma:</strong> ${data.turma || '—'}</p>
-          <p><strong>Solicitação:</strong> ${tipoLabel.split('\n')[0]}
+          <p><strong>Solicitação:</strong> ${tipoLabels}
             ${subtipo ? '— ' + subtipo.replace('via', 'ª via') : ''}
           </p>
           ${data.justificativa ? `<p><strong>Justificativa:</strong> ${data.justificativa}</p>` : ''}

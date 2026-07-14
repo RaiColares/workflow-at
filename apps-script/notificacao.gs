@@ -97,6 +97,7 @@ Este é um envio automático do sistema Workflow da Secretaria Escolar.
 }
 
 function getTipoSolicitacaoLabel(tipo) {
+  if (!tipo) return '';
   const labels = {
     'prova_2chamada': 'Prova de 2ª chamada',
     'cancelamento_matricula': 'Cancelamento de matrícula',
@@ -111,5 +112,5 @@ function getTipoSolicitacaoLabel(tipo) {
     'solicitacao_vaga_ch': 'Solicitação de vaga (Competência e Habilidades)',
     'outros': 'Outros',
   };
-  return labels[tipo] || tipo;
+  return tipo.split(',').map(t => labels[t.trim()] || t.trim()).join(', ');
 }
