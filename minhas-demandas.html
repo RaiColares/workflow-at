@@ -122,6 +122,17 @@
       });
     }
 
+    function formatSubtipo(val) {
+      if (!val) return '';
+      return val.split(',').map(s => {
+        const parts = s.split('_');
+        if (parts.length === 2) {
+          return parts[0].charAt(0).toUpperCase() + parts[0].slice(1) + ' ' + parts[1].replace('via', 'ª via');
+        }
+        return s.replace('via', 'ª via');
+      }).join(', ');
+    }
+
     function getTipoLabel(tipo) {
       if (!tipo) return '—';
       const labels = {
@@ -191,7 +202,7 @@
         } catch (e) { disciplinasHtml = p.disciplinas; }
       }
 
-      const subtipoLabel = p.subtipo ? p.subtipo.replace('via', 'ª via') : '';
+      const subtipoLabel = p.subtipo ? formatSubtipo(p.subtipo) : '';
 
       document.getElementById('modalProtocoloTitle').textContent = `Protocolo ${p.numero}`;
       document.getElementById('modalProtocoloBody').innerHTML = `
@@ -339,7 +350,7 @@
             <tr><td class="label">Modalidade</td><td>${p.modalidade || '—'}</td></tr>
             <tr><td class="label">Telefone</td><td>${p.telefone || '—'}</td></tr>
             <tr><td class="label">Email</td><td>${p.email || '—'}</td></tr>
-            <tr><td class="label">Solicitação</td><td>${tipoLabel}</td></tr>
+            <tr><td class="label">Solicitação</td><td>${tipoLabel}${p.subtipo ? ' — ' + formatSubtipo(p.subtipo) : ''}</td></tr>
             <tr><td class="label">Justificativa</td><td>${p.justificativa || '—'}</td></tr>
             <tr><td class="label">Observações</td><td>${p.observacoes || '—'}</td></tr>
             <tr><td class="label">Prazo</td><td>${p.prazo ? p.prazo + ' dias úteis' : '—'}</td></tr>

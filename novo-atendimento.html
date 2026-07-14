@@ -151,10 +151,10 @@
             </label>
             <div class="sub-via" id="sub_expedicao_historico">
               <label class="radio-label">
-                <input type="radio" name="subtipo" value="1via"> 1ª via
+                <input type="radio" name="subtipo_historico" value="1via"> 1ª via
               </label>
               <label class="radio-label">
-                <input type="radio" name="subtipo" value="2via"> 2ª via
+                <input type="radio" name="subtipo_historico" value="2via"> 2ª via
               </label>
             </div>
           </div>
@@ -167,10 +167,10 @@
             </label>
             <div class="sub-via" id="sub_expedicao_diploma">
               <label class="radio-label">
-                <input type="radio" name="subtipo" value="1via"> 1ª via
+                <input type="radio" name="subtipo_diploma" value="1via"> 1ª via
               </label>
               <label class="radio-label">
-                <input type="radio" name="subtipo" value="2via"> 2ª via
+                <input type="radio" name="subtipo_diploma" value="2via"> 2ª via
               </label>
             </div>
           </div>
@@ -421,8 +421,12 @@
       });
 
       let subtipo = '';
-      const subSelected = document.querySelector('input[name="subtipo"]:checked');
-      if (subSelected) subtipo = subSelected.value;
+      const subHistorico = document.querySelector('input[name="subtipo_historico"]:checked');
+      const subDiploma = document.querySelector('input[name="subtipo_diploma"]:checked');
+      const partes = [];
+      if (subHistorico) partes.push('historico_' + subHistorico.value);
+      if (subDiploma) partes.push('diploma_' + subDiploma.value);
+      if (partes.length > 0) subtipo = partes.join(',');
 
       let outrosDescricao = '';
       const outrosChecked = document.querySelector('input[name="tipoSolicitacao"][value="outros"]:checked');
@@ -495,7 +499,7 @@
           <p><strong>Curso:</strong> ${data.curso || '—'}</p>
           <p><strong>Turma:</strong> ${data.turma || '—'}</p>
           <p><strong>Solicitação:</strong> ${tipoLabels}
-            ${subtipo ? '— ' + subtipo.replace('via', 'ª via') : ''}
+            ${subtipo ? '— ' + subtipo.replace(/via/g, 'ª via').replace(/_/g, ' ') : ''}
           </p>
           ${data.justificativa ? `<p><strong>Justificativa:</strong> ${data.justificativa}</p>` : ''}
           <p><strong>Prazo previsto:</strong> ${data.prazo} dias úteis</p>
