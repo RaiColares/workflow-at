@@ -6,6 +6,13 @@
   <title>Minhas Demandas - Workflow da Secretaria</title>
   <link rel="icon" href="assets/images/logo-rai.webp">
   <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .modal-lg { max-width: 700px; }
+    .modal-body-detail { padding: 16px 0; }
+    .detail-row { display: flex; padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .detail-label { font-weight: 600; min-width: 160px; color: var(--text-secondary); }
+    .detail-value { flex: 1; }
+  </style>
 </head>
 <body>
   <div class="page-content">
@@ -34,16 +41,40 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="protocoloModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalProtocoloTitle">Detalhes do Protocolo</h3>
+        <button class="modal-close" onclick="fecharModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="modalProtocoloBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="imprimirA4()">Imprimir (A4)</button>
+        <button class="btn btn-outline" onclick="fecharModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/layout.js"></script>
   <script>
     let protocolosCache = [];
+    let usuariosMap = {};
+    let protocoloAtual = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
       const user = requireAuth();
       if (!user) return;
+      await carregarUsuarios();
       await carregarDemandas(user);
     });
+
+    async function carregarUsuarios() {
+      const res = await apiRequest('listar_usuarios');
+      if (res.success) {
+        res.usuarios.forEach(u => { usuariosMap[u.id] = u.nome; });
+      }
+    }
 
     async function carregarDemandas(user) {
       const res = await apiRequest('listar_protocolos');
@@ -65,19 +96,21 @@
 
       minhas.sort((a, b) => b.numero.localeCompare(a.numero));
       minhas.forEach(p => {
+        const tipoLabel = getTipoLabel(p.tipoSolicitacao);
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><strong>${p.numero}</strong></td>
           <td>${p.data ? formatDate(p.data) : '—'}</td>
           <td>${p.aluno}</td>
-          <td>${p.tipoSolicitacao || '—'}</td>
+          <td>${tipoLabel}</td>
           <td><span class="badge ${getStatusColor(p.status)}">${p.status || 'Recebido'}</span></td>
           <td>${p.prazo ? p.prazo + ' dias' : '—'}</td>
           <td>
             <div class="actions">
+              <button class="btn btn-outline btn-sm" onclick="verProtocolo('${p.id}')">Ver</button>
               <select class="form-select" style="font-size:12px;padding:4px 6px;width:auto;"
                       onchange="alterarStatus('${p.id}', this.value)">
-                <option value="">Alterar status</option>
+                <option value="">Status</option>
                 <option value="Em andamento">Em andamento</option>
                 <option value="Aguardando">Aguardando</option>
                 <option value="Concluído">Concluir</option>
@@ -89,26 +122,262 @@
       });
     }
 
-    function alterarStatus(id, novoStatus) {
+    function getTipoLabel(tipo) {
+      const labels = {
+        'prova_2chamada': 'Prova de 2ª chamada',
+        'cancelamento_matricula': 'Cancelamento de matrícula',
+        'trancamento_matricula': 'Trancamento de matrícula',
+        'revisao_prova': 'Revisão de prova',
+        'expedicao_historico': 'Expedição de histórico escolar',
+        'expedicao_diploma': 'Expedição de Diploma',
+        'abono_falta': 'Abono de falta',
+        'troca_turno': 'Troca de turno',
+        'solicitacao_estagio': 'Solicitação de estágio',
+        'solicitacao_vaga': 'Solicitação de vaga',
+        'solicitacao_vaga_ch': 'Solicitação de vaga (Competência e Habilidades)',
+        'outros': 'Outros',
+      };
+      return labels[tipo] || tipo;
+    }
+
+    async function alterarStatus(id, novoStatus) {
       if (!novoStatus) return;
 
-      const idx = protocolosCache.findIndex(p => p.id === id);
-      if (idx === -1) return;
+      const p = protocolosCache.find(x => x.id === id);
+      if (!p) return;
 
-      const protocolo = protocolosCache[idx];
+      let notificar = false;
 
-      let list = JSON.parse(localStorage.getItem('wse_protocolos') || '[]');
-      const localIdx = list.findIndex(p => p.id === id);
-      if (localIdx !== -1) {
-        list[localIdx].status = novoStatus;
-      } else {
-        list.push({ ...protocolo, status: novoStatus });
+      if (novoStatus === 'Concluído' && p.email) {
+        notificar = confirm(`Deseja notificar ${p.aluno} por email (${p.email}) sobre a conclusão?`);
+      } else if (novoStatus === 'Concluído' && !p.email) {
+        showToast('Aluno não possui email cadastrado para notificação.', 'warning');
       }
-      localStorage.setItem('wse_protocolos', JSON.stringify(list));
 
-      showToast(`Status alterado para "${novoStatus}"`);
-      carregarDemandas(getUser());
+      const res = await apiRequest('atualizar_status', {
+        id,
+        status: novoStatus,
+        notificar: notificar ? 'true' : 'false',
+      });
+
+      if (!res.success) {
+        showToast(res.error || 'Erro ao alterar status.', 'error');
+        return;
+      }
+
+      showToast(`Status alterado para "${novoStatus}"${notificar ? '. Aluno notificado por email!' : ''}`);
+      await carregarDemandas(getUser());
     }
+
+    function verProtocolo(id) {
+      const p = protocolosCache.find(x => x.id === id);
+      if (!p) return;
+      protocoloAtual = p;
+
+      const responsavelNome = usuariosMap[p.responsavel] || '—';
+      const atendidoPorNome = usuariosMap[p.atendidoPor] || '—';
+      const tipoLabel = getTipoLabel(p.tipoSolicitacao);
+
+      let disciplinasHtml = '';
+      if (p.disciplinas) {
+        try {
+          const disc = typeof p.disciplinas === 'string' ? JSON.parse(p.disciplinas) : p.disciplinas;
+          if (disc.length > 0) {
+            disciplinasHtml = disc.map(d =>
+              `<div>• ${d.nome}${d.professor ? ' — Prof. ' + d.professor : ''}</div>`
+            ).join('');
+          }
+        } catch (e) { disciplinasHtml = p.disciplinas; }
+      }
+
+      const subtipoLabel = p.subtipo ? p.subtipo.replace('via', 'ª via') : '';
+
+      document.getElementById('modalProtocoloTitle').textContent = `Protocolo ${p.numero}`;
+      document.getElementById('modalProtocoloBody').innerHTML = `
+        <div class="modal-body-detail">
+          <div class="detail-row">
+            <span class="detail-label">Protocolo</span>
+            <span class="detail-value"><strong>${p.numero}</strong></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Data</span>
+            <span class="detail-value">${p.data ? formatDateTime(p.data) : '—'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Aluno</span>
+            <span class="detail-value">${p.aluno}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Curso / Turma</span>
+            <span class="detail-value">${p.curso || '—'} ${p.turma ? '/ ' + p.turma : ''}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Modalidade</span>
+            <span class="detail-value">${p.modalidade || '—'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Telefone</span>
+            <span class="detail-value">${p.telefone || '—'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Email</span>
+            <span class="detail-value">${p.email || '—'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Solicitação</span>
+            <span class="detail-value">${tipoLabel}${subtipoLabel ? ' — ' + subtipoLabel : ''}</span>
+          </div>
+          ${disciplinasHtml ? `
+          <div class="detail-row">
+            <span class="detail-label">Disciplinas</span>
+            <span class="detail-value">${disciplinasHtml}</span>
+          </div>` : ''}
+          ${p.outrosDescricao ? `
+          <div class="detail-row">
+            <span class="detail-label">Descrição</span>
+            <span class="detail-value">${p.outrosDescricao}</span>
+          </div>` : ''}
+          ${p.justificativa ? `
+          <div class="detail-row">
+            <span class="detail-label">Justificativa</span>
+            <span class="detail-value">${p.justificativa}</span>
+          </div>` : ''}
+          ${p.observacoes ? `
+          <div class="detail-row">
+            <span class="detail-label">Observações</span>
+            <span class="detail-value">${p.observacoes}</span>
+          </div>` : ''}
+          <div class="detail-row">
+            <span class="detail-label">Status</span>
+            <span class="detail-value"><span class="badge ${getStatusColor(p.status)}">${p.status || 'Recebido'}</span></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Responsável</span>
+            <span class="detail-value">${responsavelNome}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Atendido por</span>
+            <span class="detail-value">${atendidoPorNome}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Prazo</span>
+            <span class="detail-value">${p.prazo ? p.prazo + ' dias úteis' : '—'}</span>
+          </div>
+          ${p.dataConclusao ? `
+          <div class="detail-row">
+            <span class="detail-label">Concluído em</span>
+            <span class="detail-value">${formatDateTime(p.dataConclusao)}</span>
+          </div>` : ''}
+        </div>
+      `;
+
+      document.getElementById('protocoloModal').classList.add('open');
+    }
+
+    function fecharModal() {
+      document.getElementById('protocoloModal').classList.remove('open');
+    }
+
+    function imprimirA4() {
+      const p = protocoloAtual;
+      if (!p) return;
+
+      const responsavelNome = usuariosMap[p.responsavel] || '—';
+      const atendidoPorNome = usuariosMap[p.atendidoPor] || '—';
+      const tipoLabel = getTipoLabel(p.tipoSolicitacao);
+
+      const now = new Date();
+      const dataStr = now.toLocaleDateString('pt-BR');
+      const horaStr = now.toLocaleTimeString('pt-BR');
+
+      const win = window.open('', '_blank');
+      win.document.write(`
+        <html><head><title>Protocolo ${p.numero}</title>
+        <style>
+          @page { size: A4; margin: 20mm 15mm; }
+          body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; color: #000; padding: 0; margin: 0; }
+          .container { max-width: 180mm; margin: 0 auto; padding: 20px; }
+          .header { text-align: center; margin-bottom: 24px; }
+          .header img { max-width: 80px; margin-bottom: 8px; }
+          .header h1 { font-size: 14pt; font-weight: bold; margin: 4px 0; }
+          .header p { font-size: 11pt; margin: 2px 0; }
+          .title { text-align: center; font-size: 13pt; font-weight: bold; margin: 20px 0; text-transform: uppercase; letter-spacing: 1px; }
+          .info-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+          .info-table td { padding: 5px 8px; border: 1px solid #333; vertical-align: top; }
+          .info-table .label { font-weight: bold; width: 120px; background: #f5f5f5; }
+          .assinatura { margin-top: 40px; text-align: center; }
+          .assinatura .line { border-top: 1px solid #333; width: 300px; margin: 0 auto; padding-top: 6px; font-size: 11pt; }
+          .canhoto { margin-top: 40px; border-top: 2px dashed #333; padding-top: 20px; }
+          .canhoto h4 { text-align: center; font-size: 11pt; margin: 8px 0; }
+          .canhoto .line { border-top: 1px solid #333; width: 250px; margin: 20px auto 0; padding-top: 6px; font-size: 11pt; text-align: center; }
+          @media print {
+            .no-print { display: none; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          }
+          .btn-print { display: block; margin: 20px auto; padding: 10px 24px; font-size: 12pt; cursor: pointer; }
+        </style>
+        </head><body>
+        <div class="container">
+          <button class="btn-print no-print" onclick="window.print()">Imprimir</button>
+
+          <div class="header">
+            <img src="assets/images/logo-at.png" alt="Logo" style="max-width:80px;">
+            <p>INEP 15209008</p>
+            <h1>EETEPA PROFº ANÍSIO TEIXEIRA</h1>
+            <p>TRAVESSA DOM PEDRO I, 320 - UMARIZAL, 66050100</p>
+          </div>
+
+          <div class="title">Comprovante de Protocolo</div>
+
+          <table class="info-table">
+            <tr><td class="label">Protocolo</td><td><strong>${p.numero}</strong></td></tr>
+            <tr><td class="label">Data</td><td>${p.data ? new Date(p.data).toLocaleString('pt-BR') : '—'}</td></tr>
+            <tr><td class="label">Aluno</td><td>${p.aluno}</td></tr>
+            <tr><td class="label">Curso</td><td>${p.curso || '—'}</td></tr>
+            <tr><td class="label">Turma</td><td>${p.turma || '—'}</td></tr>
+            <tr><td class="label">Modalidade</td><td>${p.modalidade || '—'}</td></tr>
+            <tr><td class="label">Telefone</td><td>${p.telefone || '—'}</td></tr>
+            <tr><td class="label">Email</td><td>${p.email || '—'}</td></tr>
+            <tr><td class="label">Solicitação</td><td>${tipoLabel}</td></tr>
+            <tr><td class="label">Justificativa</td><td>${p.justificativa || '—'}</td></tr>
+            <tr><td class="label">Observações</td><td>${p.observacoes || '—'}</td></tr>
+            <tr><td class="label">Prazo</td><td>${p.prazo ? p.prazo + ' dias úteis' : '—'}</td></tr>
+            <tr><td class="label">Responsável</td><td>${responsavelNome}</td></tr>
+            <tr><td class="label">Atendido por</td><td>${atendidoPorNome}</td></tr>
+            <tr><td class="label">Status</td><td>${p.status || 'Recebido'}</td></tr>
+          </table>
+
+          <div class="assinatura">
+            <p>____________________________________</p>
+            <p>Assinatura do Aluno / Responsável</p>
+          </div>
+
+          <div class="canhoto">
+            <h4>--- CANHOTO DO PROTOCOLO ---</h4>
+            <p style="text-align:center;font-size:11pt;">
+              <strong>${p.numero}</strong> — ${p.aluno}<br>
+              ${tipoLabel} — ${dataStr}
+            </p>
+            <div class="line">
+              <p>____________________________________</p>
+              <p>Assinatura do Servidor</p>
+              <p style="font-size:10pt;color:#555;">${dataStr} às ${horaStr}</p>
+            </div>
+          </div>
+
+          <p style="text-align:center;font-size:9pt;color:#888;margin-top:20px;">
+            Documento gerado pelo sistema Workflow da Secretaria Escolar
+          </p>
+        </div>
+        <script>window.onload=function(){setTimeout(function(){document.querySelector('.btn-print').style.display='none';window.print();window.close();},500);}<\\/script>
+        </body></html>
+      `);
+      win.document.close();
+    }
+
+    document.getElementById('protocoloModal').addEventListener('click', function(e) {
+      if (e.target === this) fecharModal();
+    });
   </script>
 </body>
 </html>

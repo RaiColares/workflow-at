@@ -48,6 +48,54 @@ Prazo previsto: ${prazo} dias úteis
   }
 }
 
+function enviarNotificacaoConclusao(alunoNome, emailDestino, protocoloNumero, tipoSolicitacao) {
+  if (!emailDestino || !protocoloNumero) {
+    return false;
+  }
+
+  const tipoLabel = getTipoSolicitacaoLabel(tipoSolicitacao);
+
+  const assunto = `Protocolo ${protocoloNumero} - Concluído`;
+
+  let corpo = `
+Prezado(a) ${alunoNome},
+
+Seu protocolo foi concluído pela Secretaria Escolar da EETEPA Professor Anísio Teixeira.
+
+Protocolo: ${protocoloNumero}
+Solicitação: ${tipoLabel}
+Data de conclusão: ${Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy HH:mm')}
+
+Seu pedido já pode ser retirado na secretaria da escola.
+
+Atenciosamente,
+Secretaria Escolar
+EETEPA Professor Anísio Teixeira
+
+---
+Este é um envio automático do sistema Workflow da Secretaria Escolar.
+  `.trim();
+
+  try {
+    MailApp.sendEmail({
+      to: emailDestino,
+      subject: assunto,
+      body: corpo,
+      noReply: true,
+    });
+
+    const logMsg = `Notificação de conclusão enviada para ${emailDestino} - Protocolo ${protocoloNumero}`;
+    registrarLog('notificacao_conclusao', logMsg);
+    registrarHistorico(protocoloNumero, 'sistema', `Sistema notificou aluno sobre conclusão (${emailDestino})`);
+
+    return true;
+  } catch (err) {
+    const logMsg = `Falha ao enviar notificação de conclusão para ${emailDestino}: ${err.toString()}`;
+    registrarLog('notificacao_conclusao_erro', logMsg);
+    return false;
+  }
+}
+
 function getTipoSolicitacaoLabel(tipo) {
   const labels = {
     'prova_2chamada': 'Prova de 2ª chamada',

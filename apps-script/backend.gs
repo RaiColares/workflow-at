@@ -48,6 +48,12 @@ function doPost(e) {
       case 'salvar_usuario':
         result = salvarUsuario(params);
         break;
+      case 'excluir_usuario':
+        result = excluirUsuario(params);
+        break;
+      case 'atualizar_status':
+        result = atualizarStatus(params);
+        break;
       default:
         result = { success: false, error: 'Ação desconhecida.' };
     }
@@ -186,11 +192,21 @@ function listarProtocolos(params) {
       aluno: row[headers.indexOf('aluno')],
       curso: row[headers.indexOf('curso')],
       turma: row[headers.indexOf('turma')],
+      modalidade: row[headers.indexOf('modalidade')],
+      telefone: row[headers.indexOf('telefone')],
+      email: row[headers.indexOf('email')],
       tipoSolicitacao: row[headers.indexOf('tipo_solicitacao')],
+      disciplinas: row[headers.indexOf('disciplinas')],
+      subtipo: row[headers.indexOf('subtipo')],
+      outrosDescricao: row[headers.indexOf('outros_descricao')],
+      justificativa: row[headers.indexOf('justificativa')],
+      observacoes: row[headers.indexOf('observacoes')],
       status: row[headers.indexOf('status')],
       responsavel: row[headers.indexOf('responsavel_id')],
       atendidoPor: row[headers.indexOf('atendido_por')],
       prazo: row[headers.indexOf('prazo')],
+      dataAtualizacao: row[headers.indexOf('data_atualizacao')],
+      dataConclusao: row[headers.indexOf('data_conclusao')],
     });
   }
 
@@ -331,6 +347,73 @@ function salvarUsuario(params) {
 
   sheet.appendRow(rowData);
   return { success: true, id };
+}
+
+function excluirUsuario(params) {
+  const sheet = getSheet('Usuários');
+  const dados = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < dados.length; i++) {
+    if (dados[i][0] === params.id) {
+      sheet.deleteRow(i + 1);
+      registrarLog('excluir_usuario', `Usuário ${dados[i][1]} excluído`);
+      return { success: true };
+    }
+  }
+
+  return { success: false, error: 'Usuário não encontrado.' };
+}
+
+function atualizarStatus(params) {
+  const token = params._token;
+  const userId = params._user;
+
+  if (!validarSessao(token, userId)) {
+    return { success: false, error: 'Sessão inválida.' };
+  }
+
+  const sheet = getSheet('Protocolos');
+  const dados = sheet.getDataRange().getValues();
+  const headers = dados[0];
+
+  for (let i = 1; i < dados.length; i++) {
+    if (dados[i][0] === params.id) {
+      const statusCol = headers.indexOf('status') + 1;
+      const dataAtualizacaoCol = headers.indexOf('data_atualizacao') + 1;
+      const dataConclusaoCol = headers.indexOf('data_conclusao') + 1;
+      const emailCol = headers.indexOf('email') + 1;
+      const alunoCol = headers.indexOf('aluno') + 1;
+      const tipoCol = headers.indexOf('tipo_solicitacao') + 1;
+      const numeroCol = headers.indexOf('numero') + 1;
+
+      const row = dados[i];
+
+      sheet.getRange(i + 1, statusCol).setValue(params.status);
+      sheet.getRange(i + 1, dataAtualizacaoCol).setValue(new Date().toISOString());
+
+      if (params.status === 'Concluído') {
+        sheet.getRange(i + 1, dataConclusaoCol).setValue(new Date().toISOString());
+      }
+
+      const logMsg = `Protocolo ${row[numeroCol - 1]} alterado para "${params.status}" por ${userId}`;
+      registrarHistorico(row[numeroCol - 1], userId, logMsg);
+      registrarLog('atualizar_status', logMsg);
+
+      if (params.status === 'Concluído' && params.notificar === 'true') {
+        const email = row[emailCol - 1];
+        const aluno = row[alunoCol - 1];
+        const tipo = row[tipoCol - 1];
+        const numero = row[numeroCol - 1];
+        if (email) {
+          enviarNotificacaoConclusao(aluno, email, numero, tipo);
+        }
+      }
+
+      return { success: true };
+    }
+  }
+
+  return { success: false, error: 'Protocolo não encontrado.' };
 }
 
 /* ─── UTILITÁRIOS ─── */

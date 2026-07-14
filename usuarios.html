@@ -118,6 +118,7 @@
               <button class="btn btn-sm ${u.ativo !== false ? 'btn-ghost' : 'btn-outline'}"
                       onclick="toggleStatus('${u.id}')">
                 ${u.ativo !== false ? 'Desativar' : 'Ativar'}</button>
+              <button class="btn btn-red btn-sm" onclick="excluirUsuario('${u.id}')">Excluir</button>
             </div>
           </td>
         `;
@@ -174,6 +175,20 @@
 
       await carregarUsuarios();
       showToast(`Usuário ${novoAtivo ? 'ativado' : 'desativado'} com sucesso!`);
+    }
+
+    async function excluirUsuario(id) {
+      if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
+
+      const res = await apiRequest('excluir_usuario', { id });
+
+      if (!res.success) {
+        showToast(res.error || 'Erro ao excluir usuário.', 'error');
+        return;
+      }
+
+      await carregarUsuarios();
+      showToast('Usuário excluído com sucesso!');
     }
 
     document.getElementById('usuarioForm').addEventListener('submit', async function(e) {
