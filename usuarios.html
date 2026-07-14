@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usuários - Workflow da Secretaria</title>
+  <link rel="icon" href="assets/images/logo-rai.webp">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="page-content">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h2 style="font-size:20px;color:var(--primary);">Usuários</h2>
+      <button class="btn btn-primary" onclick="openModal()">+ Novo Usuário</button>
+    </div>
+
+    <div class="card">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>Login</th>
+              <th>Perfil</th>
+              <th>Status</th>
+              <th style="width:160px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="usuariosBody"></tbody>
+        </table>
+      </div>
+      <div id="usuariosEmpty" class="empty-state" style="display:none;">
+        <p>Nenhum usuário cadastrado.</p>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="usuarioModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title" id="modalTitle">Novo Usuário</h3>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <form id="usuarioForm">
+          <input type="hidden" id="usuarioId">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nome <span style="color:var(--red)">*</span></label>
+              <input type="text" class="form-input" id="usuarioNome" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Login <span style="color:var(--red)">*</span></label>
+              <input type="text" class="form-input" id="usuarioLogin" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Senha <span style="color:var(--red)">*</span></label>
+              <input type="password" class="form-input" id="usuarioSenha"
+                     placeholder="Mín. 6 caracteres">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Perfil <span style="color:var(--red)">*</span></label>
+              <select class="form-select" id="usuarioPerfil" required>
+                <option value="">Selecione</option>
+                <option value="secretario">Secretário</option>
+                <option value="assistente">Assistente</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/layout.js"></script>
+  <script>
+    let editingUserId = null;
+    let usuariosCache = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      requireRole('secretario');
+      await carregarUsuarios();
+    });
+
+    async function carregarUsuarios() {
+      const res = await apiRequest('listar_usuarios');
+      const usuarios = res.success ? res.usuarios : [];
+      usuariosCache = usuarios;
+
+      const tbody = document.getElementById('usuariosBody');
+      const empty = document.getElementById('usuariosEmpty');
+
+      tbody.innerHTML = '';
+      if (usuarios.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+
+      empty.style.display = 'none';
+      usuarios.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${u.id}</td>
+          <td><strong>${u.nome}</strong></td>
+          <td>${u.login}</td>
+          <td>${u.perfil === 'secretario' ? 'Secretário' : 'Assistente'}</td>
+          <td><span class="badge ${u.ativo !== false ? 'badge-success' : 'badge-error'}">
+            ${u.ativo !== false ? 'Ativo' : 'Inativo'}</span></td>
+          <td>
+            <div class="actions">
+              <button class="btn btn-outline btn-sm" onclick="editarUsuario('${u.id}')">Editar</button>
+              <button class="btn btn-sm ${u.ativo !== false ? 'btn-ghost' : 'btn-outline'}"
+                      onclick="toggleStatus('${u.id}')">
+                ${u.ativo !== false ? 'Desativar' : 'Ativar'}</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openModal() {
+      editingUserId = null;
+      document.getElementById('usuarioForm').reset();
+      document.getElementById('usuarioId').value = '';
+      document.getElementById('modalTitle').textContent = 'Novo Usuário';
+      document.getElementById('usuarioSenha').required = true;
+      document.getElementById('usuarioModal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('usuarioModal').classList.remove('open');
+    }
+
+    function editarUsuario(id) {
+      const u = usuariosCache.find(x => x.id === id);
+      if (!u) return;
+
+      editingUserId = id;
+      document.getElementById('modalTitle').textContent = 'Editar Usuário';
+      document.getElementById('usuarioId').value = id;
+      document.getElementById('usuarioNome').value = u.nome;
+      document.getElementById('usuarioLogin').value = u.login;
+      document.getElementById('usuarioSenha').required = false;
+      document.getElementById('usuarioSenha').placeholder = 'Deixe em branco para manter';
+      document.getElementById('usuarioPerfil').value = u.perfil;
+      document.getElementById('usuarioModal').classList.add('open');
+    }
+
+    async function toggleStatus(id) {
+      const u = usuariosCache.find(x => x.id === id);
+      if (!u) return;
+
+      const novoAtivo = u.ativo === false ? true : false;
+
+      const res = await apiRequest('salvar_usuario', {
+        id: u.id,
+        nome: u.nome,
+        login: u.login,
+        perfil: u.perfil,
+        ativo: novoAtivo,
+      });
+
+      if (!res.success) {
+        showToast('Erro ao alterar status.', 'error');
+        return;
+      }
+
+      await carregarUsuarios();
+      showToast(`Usuário ${novoAtivo ? 'ativado' : 'desativado'} com sucesso!`);
+    }
+
+    document.getElementById('usuarioForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const nome = document.getElementById('usuarioNome').value.trim();
+      const login = document.getElementById('usuarioLogin').value.trim();
+      const senha = document.getElementById('usuarioSenha').value;
+      const perfil = document.getElementById('usuarioPerfil').value;
+
+      if (!nome || !login || !perfil) {
+        showToast('Preencha nome, login e perfil.', 'error');
+        return;
+      }
+
+      if (!editingUserId && (!senha || senha.length < 6)) {
+        showToast('A senha deve ter no mínimo 6 caracteres.', 'error');
+        return;
+      }
+
+      const payload = { nome, login, perfil };
+      if (editingUserId) {
+        payload.id = editingUserId;
+        if (senha) payload.senha = senha;
+      } else {
+        payload.senha = senha;
+      }
+
+      const res = await apiRequest('salvar_usuario', payload);
+
+      if (!res.success) {
+        showToast(res.error || 'Erro ao salvar usuário.', 'error');
+        return;
+      }
+
+      await carregarUsuarios();
+      closeModal();
+      showToast(editingUserId ? 'Usuário atualizado!' : 'Usuário cadastrado!');
+    });
+
+    document.getElementById('usuarioModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+  </script>
+</body>
+</html>

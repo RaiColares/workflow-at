@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Novo Atendimento - Workflow da Secretaria</title>
+  <link rel="icon" href="assets/images/logo-rai.webp">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .solicitacao-option { margin-bottom: 8px; }
+    .solicitacao-option:last-child { margin-bottom: 0; }
+    .disciplina-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .disciplina-row .form-input { flex: 1; }
+    .sub-via { display: none; margin-left: 24px; margin-top: 8px; gap: 16px; }
+    .sub-via.visible { display: flex; }
+  </style>
+</head>
+<body>
+  <div class="page-content">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Novo Atendimento</h2>
+      </div>
+
+      <form id="protocoloForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nº Protocolo</label>
+            <input type="text" class="form-input" id="protocoloNumero" readonly
+                   value="Aguardando...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Data</label>
+            <input type="text" class="form-input" id="protocoloData" readonly>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Aluno <span style="color:var(--red)">*</span></label>
+          <input type="text" class="form-input" id="alunoNome"
+                 placeholder="Nome completo do aluno" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Curso</label>
+            <select class="form-select" id="cursoSelect">
+              <option value="">Selecione um curso</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Turma</label>
+            <select class="form-select" id="turmaSelect">
+              <option value="">Selecione uma turma</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Modalidade</label>
+            <select class="form-select" id="modalidade">
+              <option value="">Selecione</option>
+              <option value="Integrado">Integrado</option>
+              <option value="Subsequente">Subsequente</option>
+              <option value="EJATEC">EJATEC</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Telefone</label>
+            <input type="tel" class="form-input" id="telefone"
+                   placeholder="(91) 99999-9999">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="email"
+                   placeholder="aluno@email.com">
+          </div>
+          <div class="form-group" style="display:flex;align-items:end;gap:8px;">
+            <label class="checkbox-label" style="margin-bottom:4px;">
+              <input type="checkbox" id="notificarEmail" checked>
+              Notificar por email
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group" id="mensagemOpcionalGroup">
+          <label class="form-label">Mensagem opcional (para o email)</label>
+          <textarea class="form-textarea" id="mensagemOpcional"
+                    placeholder="Escreva um recado opcional para o aluno..."
+                    style="min-height:60px;"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="margin-bottom:12px;">
+            Solicitação <span style="color:var(--red)">*</span>
+          </label>
+
+          <div class="solicitacao-option">
+            <label class="radio-label">
+              <input type="radio" name="tipoSolicitacao" value="prova_2chamada"
+                     onchange="onTipoSolicitacaoChange()">
+              Prova de 2ª chamada
+            </label>
+            <div class="dynamic-fields" id="fields_prova_2chamada">
+              <div id="disciplinasContainer">
+                <div class="disciplina-row">
+                  <input type="text" class="form-input" name="disciplina_nome[]"
+                         placeholder="Nome da disciplina">
+                  <input type="text" class="form-input" name="disciplina_professor[]"
+                         placeholder="Professor(a)">
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm"
+                      onclick="addDisciplina()">+ Adicionar disciplina</button>
+            </div>
+          </div>
+
+          <div class="solicitacao-option">
+            <label class="radio-label">
+              <input type="radio" name="tipoSolicitacao" value="cancelamento_matricula"
+                     onchange="onTipoSolicitacaoChange()">
+              Cancelamento de matrícula
+            </label>
+          </div>
+
+          <div class="solicitacao-option">
+            <label class="radio-label">
+              <input type="radio" name="tipoSolicitacao" value="trancamento_matricula"
+                     onchange="onTipoSolicitacaoChange()">
+              Trancamento de matrícula
+            </label>
+          </div>
+
+          <div class="solicitacao-option">
+            <label class="radio-label">
+              <input type="radio" name="tipoSolicitacao" value="revisao_prova"
+                     onchange="onTipoSolicitacaoChange()">
+              Revisão de prova
+            </label>
+          </div>
+
+          <div class="solicitacao-option">
+            <label class="radio-label">
+              <input type="radio" name="tipoSolicitacao" value="expedicao_historico"
+                     onchange="onTipoSolicitacaoChange()">
+              Expedição de histórico escolar
+            </label>
+            <div class="sub-via" id="sub_expedicao_historico">
+              <label class="radio-label">
+                <input type="radio" name="subtipo" value="1via"> 1ª via
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="subtipo" value="2via"> 2ª via
+              </label>
+            </div>
+          </div>
+
+          <div class="solicitacao-option">
+            <label class="radio-label">
+              <input type="radio" name="tipoSolicitacao" value="expedicao_diploma"
+                     onchange="onTipoSolicitacaoChange()">
+              Expedição de Diploma
+            </label>
+            <div class="sub-via" id="sub_expedicao_diploma">
+              <label class="radio-label">
+                <input type="radio" name="subtipo" value="1via"> 1ª via
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="subtipo" value="2via"> 2ª via
+              </label>
+            </div>
+          </div>
+
+          <div class="solicitacao-option">
+            <label class="radio-label">
+              <input type="radio" name="tipoSolicitacao" value="abono_falta"
+                     onchange="onTipoSolicitacaoChange()">
+              Abono de falta
+            </label>
+          </div>
+
+          <div class="solicitacao-option">
+            <label class="radio-label">
+              <input type="radio" name="tipoSolicitacao" value="troca_turno"
+                     onchange="onTipoSolicitacaoChange()">
+              Troca de turno
+            </label>
+          </div>
+
+          <div class="solicitacao-option">
+            <label class="radio-label">
+              <input type="radio" name="tipoSolicitacao" value="solicitacao_estagio"
+                     onchange="onTipoSolicitacaoChange()">
+              Solicitação de estágio
+            </label>
+          </div>
+
+          <div class="solicitacao-option">
+            <label class="radio-label">
+              <input type="radio" name="tipoSolicitacao" value="solicitacao_vaga"
+                     onchange="onTipoSolicitacaoChange()">
+              Solicitação de vaga
+            </label>
+          </div>
+
+          <div class="solicitacao-option">
+            <label class="radio-label">
+              <input type="radio" name="tipoSolicitacao" value="solicitacao_vaga_ch"
+                     onchange="onTipoSolicitacaoChange()">
+              Solicitação de vaga através de avaliação por Competência e Habilidades
+            </label>
+          </div>
+
+          <div class="solicitacao-option">
+            <label class="radio-label">
+              <input type="radio" name="tipoSolicitacao" value="outros"
+                     onchange="onTipoSolicitacaoChange()">
+              Outros
+            </label>
+            <div class="dynamic-fields" id="fields_outros">
+              <textarea class="form-textarea" id="outrosDescricao"
+                        placeholder="Descreva a solicitação..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Justificativa</label>
+          <textarea class="form-textarea" id="justificativa"
+                    placeholder="Justificativa (opcional)"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Observações</label>
+          <textarea class="form-textarea" id="observacoes"
+                    placeholder="Observações adicionais (opcional)"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Responsável</label>
+            <select class="form-select" id="responsavel">
+              <option value="">Selecione um responsável</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prazo (dias úteis)</label>
+            <input type="number" class="form-input" id="prazo" value="3" min="1" max="90">
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:24px;">
+          <button type="submit" class="btn btn-primary">
+            Registrar e Encaminhar
+          </button>
+          <button type="reset" class="btn btn-outline">Limpar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card" id="comprovanteCard" style="display:none;margin-top:20px;">
+      <div class="card-header">
+        <h3 class="card-title">Comprovante de Protocolo</h3>
+      </div>
+      <div id="comprovanteContent"></div>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button class="btn btn-primary" onclick="imprimirComprovante()">
+          Imprimir comprovante
+        </button>
+        <button class="btn btn-outline" onclick="fecharComprovante()">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/layout.js"></script>
+  <script>
+    let disciplinaCount = 1;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = getUser();
+      if (!user) return;
+
+      document.getElementById('protocoloData').value = formatDateTime(new Date());
+      document.getElementById('protocoloNumero').value = getProtocolNumber() + '...';
+
+      await carregarCursos();
+      await carregarResponsaveis();
+      setupCursoTurmaLink();
+
+      document.getElementById('notificarEmail').addEventListener('change', function() {
+        const group = document.getElementById('mensagemOpcionalGroup');
+        group.style.display = this.checked ? '' : 'none';
+      });
+    });
+
+    function onTipoSolicitacaoChange() {
+      const selected = document.querySelector('input[name="tipoSolicitacao"]:checked');
+      if (!selected) return;
+
+      document.querySelectorAll('.dynamic-fields').forEach(el => el.classList.remove('visible'));
+      document.querySelectorAll('.sub-via').forEach(el => el.classList.remove('visible'));
+
+      const value = selected.value;
+
+      if (value === 'prova_2chamada') {
+        document.getElementById('fields_prova_2chamada').classList.add('visible');
+      } else if (value === 'expedicao_historico') {
+        document.getElementById('sub_expedicao_historico').classList.add('visible');
+      } else if (value === 'expedicao_diploma') {
+        document.getElementById('sub_expedicao_diploma').classList.add('visible');
+      } else if (value === 'outros') {
+        document.getElementById('fields_outros').classList.add('visible');
+      }
+    }
+
+    function addDisciplina() {
+      const container = document.getElementById('disciplinasContainer');
+      const row = document.createElement('div');
+      row.className = 'disciplina-row';
+      row.innerHTML = `
+        <input type="text" class="form-input" name="disciplina_nome[]"
+               placeholder="Nome da disciplina">
+        <input type="text" class="form-input" name="disciplina_professor[]"
+               placeholder="Professor(a)">
+        <button type="button" class="btn btn-red btn-sm btn-icon"
+                onclick="this.parentElement.remove()" title="Remover">
+          ×
+        </button>
+      `;
+      container.appendChild(row);
+    }
+
+    async function carregarCursos() {
+      const user = getUser();
+      if (!user) return;
+
+      const cursoSelect = document.getElementById('cursoSelect');
+      const turmaSelect = document.getElementById('turmaSelect');
+
+      const res = await apiRequest('listar_turmas');
+      const turmas = res.success ? res.turmas : [];
+      const cursos = [...new Set(turmas.map(t => t.curso))];
+
+      cursoSelect.innerHTML = '<option value="">Selecione um curso</option>' +
+        cursos.map(c => `<option value="${c}">${c}</option>`).join('');
+
+      cursoSelect._turmas = turmas;
+      cursoSelect._allTurmas = turmas;
+    }
+
+    function setupCursoTurmaLink() {
+      const cursoSelect = document.getElementById('cursoSelect');
+      const turmaSelect = document.getElementById('turmaSelect');
+
+      cursoSelect.addEventListener('change', () => {
+        const curso = cursoSelect.value;
+        const turmas = cursoSelect._turmas || [];
+        const filtered = curso ? turmas.filter(t => t.curso === curso) : turmas;
+
+        turmaSelect.innerHTML = '<option value="">Selecione uma turma</option>' +
+          filtered.map(t => `<option value="${t.turma}">${t.turma}</option>`).join('');
+
+        if (filtered.length === 1) {
+          turmaSelect.value = filtered[0].turma;
+        }
+      });
+
+      turmaSelect.addEventListener('change', () => {
+        const turma = turmaSelect.value;
+        if (turma) {
+          const turmas = cursoSelect._turmas || [];
+          const found = turmas.find(t => t.turma === turma);
+          if (found) {
+            cursoSelect.value = found.curso;
+          }
+        }
+      });
+    }
+
+    async function carregarResponsaveis() {
+      const select = document.getElementById('responsavel');
+      const res = await apiRequest('listar_usuarios');
+      const usuarios = res.success ? res.usuarios.filter(u => u.ativo !== false) : [];
+
+      select.innerHTML = '<option value="">Selecione um responsável</option>' +
+        usuarios.map(u =>
+          `<option value="${u.id}">${u.nome} (${u.perfil === 'secretario' ? 'Secretário' : 'Assistente'})</option>`
+        ).join('');
+    }
+
+    document.getElementById('protocoloForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const selected = document.querySelector('input[name="tipoSolicitacao"]:checked');
+      if (!selected) {
+        showToast('Selecione um tipo de solicitação.', 'error');
+        return;
+      }
+
+      const aluno = document.getElementById('alunoNome').value.trim();
+      if (!aluno) {
+        showToast('Informe o nome do aluno.', 'error');
+        return;
+      }
+
+      const disciplinas = [];
+      document.querySelectorAll('.disciplina-row').forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        if (inputs.length >= 2) {
+          const nome = inputs[0].value.trim();
+          const prof = inputs[1].value.trim();
+          if (nome) disciplinas.push({ nome, professor: prof });
+        }
+      });
+
+      let subtipo = '';
+      const subSelected = document.querySelector('input[name="subtipo"]:checked');
+      if (subSelected) subtipo = subSelected.value;
+
+      let outrosDescricao = '';
+      if (selected.value === 'outros') {
+        outrosDescricao = document.getElementById('outrosDescricao').value.trim();
+      }
+
+      const data = {
+        aluno,
+        curso: document.getElementById('cursoSelect').value,
+        turma: document.getElementById('turmaSelect').value,
+        modalidade: document.getElementById('modalidade').value,
+        telefone: document.getElementById('telefone').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        notificar: document.getElementById('notificarEmail').checked,
+        mensagemOpcional: document.getElementById('mensagemOpcional').value.trim(),
+        tipoSolicitacao: selected.value,
+        disciplinas,
+        subtipo,
+        outrosDescricao,
+        justificativa: document.getElementById('justificativa').value.trim(),
+        observacoes: document.getElementById('observacoes').value.trim(),
+        responsavel: document.getElementById('responsavel').value,
+        prazo: parseInt(document.getElementById('prazo').value) || 3,
+      };
+
+      const submitBtn = this.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Salvando...';
+
+      const res = await apiRequest('criar_protocolo', {
+        ...data,
+        disciplinas: JSON.stringify(disciplinas),
+        notificar: data.notificar ? 'true' : 'false',
+      });
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Registrar e Encaminhar';
+
+      if (!res.success) {
+        showToast(res.error || 'Erro ao registrar protocolo.', 'error');
+        return;
+      }
+
+      const protocoloNum = res.protocolo;
+      document.getElementById('protocoloNumero').value = protocoloNum;
+
+      const tipoLabel = selected.parentElement.textContent.trim();
+      const responsavelNome = document.getElementById('responsavel').options[
+        document.getElementById('responsavel').selectedIndex
+      ]?.text || '—';
+
+      const comprovanteHtml = `
+        <div style="text-align:center;padding:20px;border:1px solid #ddd;border-radius:12px;">
+          <p style="font-size:13px;color:#888;">GOVERNO DO ESTADO DO PARÁ<br>
+          SECRETARIA DE ESTADO DE EDUCAÇÃO<br>
+          EETEPA PROFESSOR ANÍSIO TEIXEIRA</p>
+          <h3 style="color:var(--primary);margin:16px 0 4px;">COMPROVANTE DE PROTOCOLO</h3>
+          <p style="font-size:13px;color:#888;margin-bottom:16px;">
+            Workflow da Secretaria Escolar</p>
+          <hr>
+          <p><strong>Protocolo:</strong> ${protocoloNum}</p>
+          <p><strong>Data:</strong> ${formatDateTime(new Date())}</p>
+          <p><strong>Aluno:</strong> ${data.aluno}</p>
+          <p><strong>Curso:</strong> ${data.curso || '—'}</p>
+          <p><strong>Turma:</strong> ${data.turma || '—'}</p>
+          <p><strong>Solicitação:</strong> ${tipoLabel.split('\n')[0]}
+            ${subtipo ? '— ' + subtipo.replace('via', 'ª via') : ''}
+          </p>
+          ${data.justificativa ? `<p><strong>Justificativa:</strong> ${data.justificativa}</p>` : ''}
+          <p><strong>Prazo previsto:</strong> ${data.prazo} dias úteis</p>
+          <p><strong>Atendido por:</strong> ${getUser()?.nome || '—'}</p>
+          <p><strong>Responsável:</strong> ${responsavelNome}</p>
+          <p><strong>Situação:</strong> Recebido</p>
+          <hr style="margin:16px 0;">
+          <p style="font-size:12px;color:#888;">
+            Este comprovante confirma o registro da solicitação junto à Secretaria Escolar.</p>
+        </div>
+      `;
+
+      document.getElementById('comprovanteContent').innerHTML = comprovanteHtml;
+      document.getElementById('comprovanteCard').style.display = 'block';
+
+      showToast('Protocolo registrado com sucesso!', 'success');
+    });
+
+    function imprimirComprovante() {
+      const content = document.getElementById('comprovanteContent').innerHTML;
+      const win = window.open('', '_blank');
+      win.document.write(`
+        <html><head><title>Comprovante de Protocolo</title>
+        <link rel="stylesheet" href="assets/css/style.css">
+        <style>body{padding:40px;font-family:'Inter',sans-serif;}
+        @media print{body{padding:20px;}}</style>
+        </head><body>${content}
+        <script>window.onload=function(){window.print();window.close();}<\/script>
+        </body></html>
+      `);
+      win.document.close();
+    }
+
+    function fecharComprovante() {
+      document.getElementById('comprovanteCard').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Workflow da Secretaria</title>
+  <link rel="icon" href="assets/images/logo-rai.webp">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="page-content" id="dashboardContent">
+    <div class="stat-cards" id="statCards">
+      <div class="stat-card">
+        <div class="stat-icon blue">📊</div>
+        <div class="stat-info">
+          <div class="stat-value" id="totalProtocolos">-</div>
+          <div class="stat-label">Total de Protocolos</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon yellow">⏳</div>
+        <div class="stat-info">
+          <div class="stat-value" id="pendentes">-</div>
+          <div class="stat-label">Pendentes</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red">🔴</div>
+        <div class="stat-info">
+          <div class="stat-value" id="atrasados">-</div>
+          <div class="stat-label">Atrasados</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">✅</div>
+        <div class="stat-info">
+          <div class="stat-value" id="concluidos">-</div>
+          <div class="stat-label">Concluídos</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Últimos Protocolos</h3>
+        </div>
+        <div id="recentProtocolos">
+          <div class="empty-state"><p>Nenhum protocolo registrado.</p></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Minhas Demandas</h3>
+        </div>
+        <div id="myDemandas">
+          <div class="empty-state"><p>Nenhuma demanda no momento.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <div class="card-header">
+        <h3 class="card-title">Atendimentos por mês</h3>
+      </div>
+      <div id="chartPlaceholder" style="height:200px;display:flex;align-items:center;justify-content:center;color:#888;">
+        <p>Gráfico será carregado com dados do backend.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/layout.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = getUser();
+      if (!user) return;
+
+      const res = await apiRequest('listar_protocolos');
+      const protocolos = res.success ? res.protocolos : [];
+
+      const total = protocolos.length;
+      const pendentes = protocolos.filter(p => p.status === 'Recebido' || p.status === 'Em andamento' || p.status === 'Aguardando').length;
+      const concluidos = protocolos.filter(p => p.status === 'Concluído' || p.status === 'Entregue').length;
+      const atrasados = protocolos.filter(p => {
+        if (!p.prazo || p.status === 'Concluído' || p.status === 'Entregue' || p.status === 'Cancelado') return false;
+        const dataCriacao = new Date(p.data);
+        const diasUteis = p.prazo;
+        const prazo = new Date(dataCriacao);
+        prazo.setDate(prazo.getDate() + diasUteis * 1.5);
+        return new Date() > prazo;
+      }).length;
+
+      const minhas = protocolos.filter(p => p.responsavel === user.id).length;
+      const minhasConcluidas = protocolos.filter(p =>
+        p.responsavel === user.id && (p.status === 'Concluído' || p.status === 'Entregue')
+      ).length;
+      const hoje = protocolos.filter(p => {
+        const data = new Date(p.data);
+        const hojeData = new Date();
+        return data.toDateString() === hojeData.toDateString();
+      }).length;
+
+      if (user.perfil === 'assistente') {
+        document.querySelector('.stat-cards').innerHTML = `
+          <div class="stat-card">
+            <div class="stat-icon blue">📋</div>
+            <div class="stat-info">
+              <div class="stat-value" id="minhasDemandas">${minhas}</div>
+              <div class="stat-label">Minhas Demandas</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon yellow">📅</div>
+            <div class="stat-info">
+              <div class="stat-value" id="hoje">${hoje}</div>
+              <div class="stat-label">Hoje</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red">⚡</div>
+            <div class="stat-info">
+              <div class="stat-value" id="urgentes">${pendentes}</div>
+              <div class="stat-label">Pendentes</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">✅</div>
+            <div class="stat-info">
+              <div class="stat-value" id="concluidasAssistente">${minhasConcluidas}</div>
+              <div class="stat-label">Concluídas</div>
+            </div>
+          </div>
+        `;
+      } else {
+        document.getElementById('totalProtocolos').textContent = total;
+        document.getElementById('pendentes').textContent = pendentes;
+        document.getElementById('atrasados').textContent = atrasados;
+        document.getElementById('concluidos').textContent = concluidos;
+      }
+
+      const recentes = protocolos.sort((a, b) => b.numero?.localeCompare(a.numero || '') || 0).slice(0, 5);
+      const recentDiv = document.getElementById('recentProtocolos');
+      if (recentes.length > 0) {
+        recentDiv.innerHTML = recentes.map(p => `
+          <div style="padding:8px 0;border-bottom:1px solid var(--border);">
+            <strong>${p.numero}</strong> — ${p.aluno}
+            <span class="badge ${getStatusColor(p.status)}" style="float:right">${p.status || 'Recebido'}</span>
+          </div>
+        `).join('');
+      }
+
+      const userDemandas = protocolos.filter(p => p.responsavel === user.id).slice(0, 5);
+      const demandasDiv = document.getElementById('myDemandas');
+      if (userDemandas.length > 0) {
+        demandasDiv.innerHTML = userDemandas.map(p => `
+          <div style="padding:8px 0;border-bottom:1px solid var(--border);">
+            <strong>${p.numero}</strong> — ${p.aluno}
+            <span class="badge ${getStatusColor(p.status)}" style="float:right">${p.status || 'Recebido'}</span>
+          </div>
+        `).join('');
+      }
+    });
+  </script>
+</body>
+</html>

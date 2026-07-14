@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minhas Demandas - Workflow da Secretaria</title>
+  <link rel="icon" href="assets/images/logo-rai.webp">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="page-content">
+    <h2 style="font-size:20px;color:var(--primary);margin-bottom:20px;">Minhas Demandas</h2>
+
+    <div class="card">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Protocolo</th>
+              <th>Data</th>
+              <th>Aluno</th>
+              <th>Solicitação</th>
+              <th>Status</th>
+              <th>Prazo</th>
+              <th style="width:120px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="demandasBody"></tbody>
+        </table>
+      </div>
+      <div id="demandasEmpty" class="empty-state" style="display:none;">
+        <p>Nenhuma demanda encontrada.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/layout.js"></script>
+  <script>
+    let protocolosCache = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = requireAuth();
+      if (!user) return;
+      await carregarDemandas(user);
+    });
+
+    async function carregarDemandas(user) {
+      const res = await apiRequest('listar_protocolos');
+      const todos = res.success ? res.protocolos : [];
+      protocolosCache = todos;
+      const minhas = todos.filter(p => p.responsavel === user.id || p.atendidoPor === user.id);
+
+      const tbody = document.getElementById('demandasBody');
+      const empty = document.getElementById('demandasEmpty');
+
+      tbody.innerHTML = '';
+
+      if (minhas.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+
+      empty.style.display = 'none';
+
+      minhas.sort((a, b) => b.numero.localeCompare(a.numero));
+      minhas.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${p.numero}</strong></td>
+          <td>${p.data ? formatDate(p.data) : '—'}</td>
+          <td>${p.aluno}</td>
+          <td>${p.tipoSolicitacao || '—'}</td>
+          <td><span class="badge ${getStatusColor(p.status)}">${p.status || 'Recebido'}</span></td>
+          <td>${p.prazo ? p.prazo + ' dias' : '—'}</td>
+          <td>
+            <div class="actions">
+              <select class="form-select" style="font-size:12px;padding:4px 6px;width:auto;"
+                      onchange="alterarStatus('${p.id}', this.value)">
+                <option value="">Alterar status</option>
+                <option value="Em andamento">Em andamento</option>
+                <option value="Aguardando">Aguardando</option>
+                <option value="Concluído">Concluir</option>
+              </select>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function alterarStatus(id, novoStatus) {
+      if (!novoStatus) return;
+
+      const idx = protocolosCache.findIndex(p => p.id === id);
+      if (idx === -1) return;
+
+      const protocolo = protocolosCache[idx];
+
+      let list = JSON.parse(localStorage.getItem('wse_protocolos') || '[]');
+      const localIdx = list.findIndex(p => p.id === id);
+      if (localIdx !== -1) {
+        list[localIdx].status = novoStatus;
+      } else {
+        list.push({ ...protocolo, status: novoStatus });
+      }
+      localStorage.setItem('wse_protocolos', JSON.stringify(list));
+
+      showToast(`Status alterado para "${novoStatus}"`);
+      carregarDemandas(getUser());
+    }
+  </script>
+</body>
+</html>

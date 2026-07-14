@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configurações - Workflow da Secretaria</title>
+  <link rel="icon" href="assets/images/logo-rai.webp">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="page-content">
+    <h2 style="font-size:20px;color:var(--primary);margin-bottom:20px;">Configurações</h2>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Tipos de Solicitação</h3>
+        </div>
+        <div id="tiposList">
+          <div class="empty-state"><p>Gerenciamento disponível na próxima versão.</p></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Status</h3>
+        </div>
+        <div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <span class="badge badge-info">Novo</span>
+            <span class="badge badge-info">Recebido</span>
+            <span class="badge badge-warning">Em andamento</span>
+            <span class="badge badge-warning">Aguardando</span>
+            <span class="badge badge-success">Concluído</span>
+            <span class="badge badge-success">Entregue</span>
+            <span class="badge badge-error">Cancelado</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Prioridades</h3>
+        </div>
+        <div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <span class="badge badge-neutral">Normal</span>
+            <span class="badge badge-warning">Alta</span>
+            <span class="badge badge-error">Urgente</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Sessão</h3>
+        </div>
+        <div>
+          <div class="form-group">
+            <label class="form-label">Tempo de inatividade (minutos)</label>
+            <input type="number" class="form-input" value="30" min="5" max="120">
+          </div>
+          <button class="btn btn-primary btn-sm">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/layout.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      requireRole('secretario');
+    });
+  </script>
+</body>
+</html>

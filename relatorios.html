@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relatórios - Workflow da Secretaria</title>
+  <link rel="icon" href="assets/images/logo-rai.webp">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="page-content">
+    <h2 style="font-size:20px;color:var(--primary);margin-bottom:20px;">Relatórios</h2>
+
+    <div class="grid-3">
+      <div class="card" style="cursor:pointer;">
+        <div class="card-header">
+          <h3 class="card-title">Atendimentos por servidor</h3>
+        </div>
+        <p style="color:#888;font-size:13px;">Total de atendimentos agrupados por servidor.</p>
+      </div>
+
+      <div class="card" style="cursor:pointer;">
+        <div class="card-header">
+          <h3 class="card-title">Atendimentos por período</h3>
+        </div>
+        <p style="color:#888;font-size:13px;">Filtre por data inicial e final.</p>
+      </div>
+
+      <div class="card" style="cursor:pointer;">
+        <div class="card-header">
+          <h3 class="card-title">Solicitações mais frequentes</h3>
+        </div>
+        <p style="color:#888;font-size:13px;">Ranking dos tipos de solicitação.</p>
+      </div>
+
+      <div class="card" style="cursor:pointer;">
+        <div class="card-header">
+          <h3 class="card-title">Tempo médio de atendimento</h3>
+        </div>
+        <p style="color:#888;font-size:13px;">Média de dias para conclusão.</p>
+      </div>
+
+      <div class="card" style="cursor:pointer;">
+        <div class="card-header">
+          <h3 class="card-title">Protocolos atrasados</h3>
+        </div>
+        <p style="color:#888;font-size:13px;">Demandas que excederam o prazo.</p>
+      </div>
+
+      <div class="card" style="cursor:pointer;">
+        <div class="card-header">
+          <h3 class="card-title">Protocolos concluídos</h3>
+        </div>
+        <p style="color:#888;font-size:13px;">Total de protocolos finalizados.</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <div class="card-header">
+        <h3 class="card-title">Exportar dados</h3>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline">Exportar para Excel</button>
+        <button class="btn btn-outline">Exportar para PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/layout.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      requireAuth();
+    });
+  </script>
+</body>
+</html>

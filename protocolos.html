@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Protocolos - Workflow da Secretaria</title>
+  <link rel="icon" href="assets/images/logo-rai.webp">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="page-content">
+    <h2 style="font-size:20px;color:var(--primary);margin-bottom:20px;">Todos os Protocolos</h2>
+
+    <div class="filters-bar">
+      <div class="form-group">
+        <label class="form-label">Aluno</label>
+        <input type="text" class="form-input" id="filtroAluno" placeholder="Buscar aluno...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Curso</label>
+        <input type="text" class="form-input" id="filtroCurso" placeholder="Curso">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Turma</label>
+        <input type="text" class="form-input" id="filtroTurma" placeholder="Turma">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="filtroStatus">
+          <option value="">Todos</option>
+          <option value="Recebido">Recebido</option>
+          <option value="Em andamento">Em andamento</option>
+          <option value="Aguardando">Aguardando</option>
+          <option value="Concluído">Concluído</option>
+          <option value="Entregue">Entregue</option>
+          <option value="Cancelado">Cancelado</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Responsável</label>
+        <select class="form-select" id="filtroResponsavel">
+          <option value="">Todos</option>
+          <option value="1">Rai Colares</option>
+          <option value="2">Wal</option>
+        </select>
+      </div>
+      <div class="form-group" style="display:flex;align-items:end;">
+        <button class="btn btn-primary btn-sm" onclick="aplicarFiltros()">Filtrar</button>
+        <button class="btn btn-ghost btn-sm" onclick="limparFiltros()" style="margin-left:4px;">
+          Limpar
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Protocolo</th>
+              <th>Data</th>
+              <th>Aluno</th>
+              <th>Solicitação</th>
+              <th>Status</th>
+              <th>Responsável</th>
+              <th style="width:100px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="protocolosBody"></tbody>
+        </table>
+      </div>
+      <div id="protocolosEmpty" class="empty-state" style="display:none;">
+        <p>Nenhum protocolo encontrado.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/layout.js"></script>
+  <script>
+    let usuariosMap = {};
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      requireAuth();
+      await carregarUsuarios();
+      await carregarProtocolos();
+      setupFilters();
+    });
+
+    async function carregarUsuarios() {
+      const res = await apiRequest('listar_usuarios');
+      if (res.success) {
+        res.usuarios.forEach(u => { usuariosMap[u.id] = u.nome; });
+      }
+      const select = document.getElementById('filtroResponsavel');
+      const options = res.success
+        ? res.usuarios.map(u => `<option value="${u.id}">${u.nome}</option>`).join('')
+        : '';
+      select.innerHTML = '<option value="">Todos</option>' + options;
+    }
+
+    async function carregarProtocolos(filtros = {}) {
+      const res = await apiRequest('listar_protocolos');
+      let protocolos = res.success ? res.protocolos : [];
+
+      if (filtros.aluno) {
+        protocolos = protocolos.filter(p =>
+          p.aluno.toLowerCase().includes(filtros.aluno.toLowerCase()));
+      }
+      if (filtros.status) {
+        protocolos = protocolos.filter(p => p.status === filtros.status);
+      }
+      if (filtros.responsavel) {
+        protocolos = protocolos.filter(p => p.responsavel === filtros.responsavel);
+      }
+
+      const tbody = document.getElementById('protocolosBody');
+      const empty = document.getElementById('protocolosEmpty');
+
+      tbody.innerHTML = '';
+
+      if (protocolos.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+
+      empty.style.display = 'none';
+      protocolos.sort((a, b) => b.numero.localeCompare(a.numero));
+
+      protocolos.forEach(p => {
+        const responsavelNome = usuariosMap[p.responsavel] || '—';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${p.numero}</strong></td>
+          <td>${p.data ? formatDate(p.data) : '—'}</td>
+          <td>${p.aluno}</td>
+          <td>${p.tipoSolicitacao || '—'}</td>
+          <td><span class="badge ${getStatusColor(p.status)}">${p.status || 'Recebido'}</span></td>
+          <td>${responsavelNome}</td>
+          <td>
+            <button class="btn btn-outline btn-sm" onclick="verProtocolo('${p.id}')">Ver</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function verProtocolo(id) {
+      showToast('Detalhes do protocolo disponível na próxima versão.', 'info');
+    }
+
+    function setupFilters() {
+      document.getElementById('filtroAluno').addEventListener('input', debounce(aplicarFiltros, 400));
+    }
+
+    function aplicarFiltros() {
+      const filtros = {
+        aluno: document.getElementById('filtroAluno').value,
+        status: document.getElementById('filtroStatus').value,
+        responsavel: document.getElementById('filtroResponsavel').value,
+      };
+      carregarProtocolos(filtros);
+    }
+
+    function limparFiltros() {
+      document.getElementById('filtroAluno').value = '';
+      document.getElementById('filtroCurso').value = '';
+      document.getElementById('filtroTurma').value = '';
+      document.getElementById('filtroStatus').value = '';
+      document.getElementById('filtroResponsavel').value = '';
+      carregarProtocolos();
+    }
+  </script>
+</body>
+</html>

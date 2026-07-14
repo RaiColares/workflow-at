@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workflow da Secretaria - Login</title>
+  <link rel="icon" href="assets/images/logo-rai.webp">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .password-wrapper {
+      position: relative;
+    }
+    .password-wrapper .form-input {
+      padding-right: 44px;
+    }
+    .toggle-password {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px;
+      color: #6b7280;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: color 0.2s;
+    }
+    .toggle-password:hover {
+      color: #374151;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-header">
+        <img src="assets/images/logo-at.png" alt="Logo" class="login-logo"
+             onerror="this.style.display='none'">
+        <h1>Workflow da Secretaria</h1>
+        <p>EETEPA Professor Anísio Teixeira</p>
+      </div>
+
+      <form class="login-form" onsubmit="handleLogin(event)">
+        <div id="loginError" class="toast toast-error" style="display:none;margin-bottom:16px;"></div>
+
+        <div class="form-group">
+          <label class="form-label" for="login">Login</label>
+          <input type="text" id="login" class="form-input"
+                 placeholder="Seu login" autocomplete="username" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="senha">Senha</label>
+          <div class="password-wrapper">
+            <input type="password" id="senha" class="form-input"
+                   placeholder="Sua senha" autocomplete="current-password" required>
+            <button type="button" class="toggle-password" onclick="toggleSenha()"
+                    aria-label="Mostrar senha" tabindex="-1">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                   stroke-linejoin="round" id="eyeIcon">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="loginBtn">Entrar</button>
+      </form>
+
+      <div class="login-footer">
+        <p>Sistema de Gestão de Atendimentos e Processos</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleSenha() {
+      const input = document.getElementById('senha');
+      const icon = document.getElementById('eyeIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>';
+      } else {
+        input.type = 'password';
+        icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+      }
+    }
+  </script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <footer class="app-footer login-footer">
+    <div class="footer-content">
+      <img src="assets/images/logo-rai.webp" alt="Logo Rai" class="footer-logo"
+           onerror="this.style.display='none'">
+      <p>Feito por <a href="https://raicolares.github.io/portfolio-rai/" target="_blank" class="footer-author">RaiColares</a>. Copyright &copy; Todos os direitos reservados.</p>
+    </div>
+  </footer>
+</body>
+</html>
