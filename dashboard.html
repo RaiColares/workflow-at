@@ -73,9 +73,19 @@
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/layout.js"></script>
   <script>
+    function getSaudacao() {
+      const h = new Date().getHours();
+      if (h < 12) return 'Bom dia';
+      if (h < 18) return 'Boa tarde';
+      return 'Boa noite';
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       const user = getUser();
       if (!user) return;
+
+      document.getElementById('pageTitle').textContent =
+        `${getSaudacao()}, ${user.nome}!`;
 
       const res = await apiRequest('listar_protocolos');
       const protocolos = res.success ? res.protocolos : [];
